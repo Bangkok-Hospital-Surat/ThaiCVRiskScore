@@ -1,6 +1,7 @@
 # HTTP response headers for Cloudflare Pages / Netlify (both read this file).
-# GitHub Pages IGNORES this file (no custom headers there) — that is exactly
-# why the frame-ancestors lock only takes effect once hosted on Cloudflare/Netlify.
+# GitHub Pages IGNORES this file (no custom headers there) — that is why the
+# frame-ancestors lock and no-cache below only take effect once hosted on
+# Cloudflare/Netlify. (On GitHub Pages, assets are cached ~10 min by default.)
 #
 # NOTE: Do NOT add "X-Frame-Options: SAMEORIGIN" — it would BLOCK embedding on
 # the hospital domain (cross-origin). Framing control is done via CSP
@@ -13,9 +14,7 @@
   # Only the hospital site (and this origin itself) may embed the tool in an iframe.
   # Add any extra origins the CMS actually serves the live page from, if different.
   Content-Security-Policy: frame-ancestors 'self' https://www.bangkokhospital.com https://bangkokhospital.com
-
-# Long-cache static assets (safe: content is versioned by deploy)
-/assets/*
-  Cache-Control: public, max-age=86400
-/css/*
-  Cache-Control: public, max-age=86400
+  # Always revalidate so a new deploy reaches every device immediately (no stale
+  # JS/CSS/HTML cache). Files are tiny; revalidation is a cheap 304. This is the
+  # correct trade-off for a clinical tool where showing the latest code matters.
+  Cache-Control: no-cache
