@@ -191,11 +191,9 @@ export async function shareOrDownloadSummary(data, format = 'png') {
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
-      await navigator.share({
-        files: [file],
-        title: 'ผลประเมินความเสี่ยงหัวใจ (Thai CV Risk)',
-        text: 'ผลประเมินความเสี่ยงโรคหัวใจและหลอดเลือดใน 10 ปี (ไม่ใช่การวินิจฉัย)'
-      });
+      // Share the FILE ONLY. Passing `text`/`title` alongside `files` makes iOS
+      // emit a second, separate text item (a stray "text" note) next to the file.
+      await navigator.share({ files: [file] });
       return { ok: true, method: 'share' };
     } catch (err) {
       if (err && err.name === 'AbortError') return { ok: true, method: 'cancelled' };
