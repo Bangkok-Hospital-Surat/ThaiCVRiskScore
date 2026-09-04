@@ -127,10 +127,17 @@ async function renderCardCanvas(data) {
     } else if (b.type === 'risk') {
       roundRect(ctx, PAD, y, CW, b.h, 24); ctx.fillStyle = b.color; ctx.fill();
       ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
-      ctx.font = `800 130px ${FONT}`;
-      ctx.fillText(b.pct + '%', W / 2, y + 40);
+      // Auto-fit the risk text so long values (e.g. "มากกว่า 30%") never clip.
+      const pctText = b.pct + '%';
+      const maxW = CW - 90;
+      let fs = 130;
+      ctx.font = `800 ${fs}px ${FONT}`;
+      while (fs > 44 && ctx.measureText(pctText).width > maxW) { fs -= 4; ctx.font = `800 ${fs}px ${FONT}`; }
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pctText, W / 2, y + 96);
+      ctx.textBaseline = 'top';
       ctx.font = `700 40px ${FONT}`;
-      ctx.fillText(b.band, W / 2, y + 180);
+      ctx.fillText(b.band, W / 2, y + 176);
       ctx.textAlign = 'left';
       y += b.h + (b.gapAfter || 0);
     } else if (b.type === 'divider') {
