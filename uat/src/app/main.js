@@ -81,7 +81,23 @@ function render() {
   app.innerHTML = Stepper(step) + body;
   restoreInputs();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  postHeight();
 }
+
+/* --------------- iframe auto-resize (for embedding on the hospital website) ---
+ * Sends the document height to the parent page so the embedding <iframe> can
+ * resize to fit (no inner scrollbar). Only a height number is sent — never any
+ * health data. type must match the parent's listener exactly. */
+function postHeight() {
+  try {
+    const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    parent.postMessage({ type: 'bsr-thaicv-height', height: h }, '*');
+  } catch (e) { /* not framed / blocked */ }
+}
+window.addEventListener('load', postHeight);
+window.addEventListener('resize', postHeight);
+if (window.ResizeObserver) { new ResizeObserver(postHeight).observe(document.body); }
+else { setInterval(postHeight, 600); }
 
 /* --------------- input persistence --------------- */
 function restoreInputs() {
