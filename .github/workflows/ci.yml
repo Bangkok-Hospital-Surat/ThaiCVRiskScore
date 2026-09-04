@@ -1,0 +1,20 @@
+name: CI
+
+# Runs the validation/eligibility/interpretation suites on every push and PR.
+# This does NOT deploy anything.
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run all test suites (validation must pass)
+        run: node tests/run-all.js

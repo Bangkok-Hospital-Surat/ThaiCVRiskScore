@@ -1,0 +1,6 @@
+HeartCheck Wise – Thai CV Risk Score (Non-Lab)
+UAT build: 1.0.0-uat.1
+Built: 2026-09-04
+Candidate: PRE-UAT (noindex). Production = NO-GO until release gates met.
+Underlying equation: Thai CV Risk Score v2.5 (Rama-Mahidol, 2021), non-lab (WHR).
+Validation: 44/44 golden cases pass (max err 4.9e-7); 74/74 total checks pass.

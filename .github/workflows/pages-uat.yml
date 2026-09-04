@@ -1,0 +1,46 @@
+name: Deploy UAT to GitHub Pages
+
+# MANUAL ONLY (workflow_dispatch). Deployment is never automatic — it must be
+# triggered by a human, in keeping with the "isolated UAT first, explicit
+# approval before production" governance. The deployed site keeps `noindex`
+# and the PRE-UAT badge until clinical sign-off is recorded.
+on:
+  workflow_dispatch:
+
+# Re-run the release gate before any deploy.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Release gate — all tests must pass
+        run: node tests/run-all.js
+
+  deploy:
+    needs: gate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

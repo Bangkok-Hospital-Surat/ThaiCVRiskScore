@@ -1,0 +1,245 @@
+You are continuing an existing clinical web-app project named “HeartCheck Wise”.
+
+Your task is to develop a new Thai-first module:
+
+HEARTCHECK WISE – THAI CV RISK SCORE (NON-LAB)
+
+Primary objective:
+Build a safe, auditable, client-side online Thai cardiovascular risk assessment that does NOT require laboratory values and provides plain-language interpretation similar in usability to the existing PREVENT experience.
+
+CRITICAL RULE:
+DO NOT start by inventing or hard-coding the Thai CV Risk Score equation.
+
+PHASE 1 MUST BE RESEARCH + VERIFICATION.
+
+1. Identify the official or best-supported Thai CV Risk Score NON-LAB equation.
+Prioritize sources in this order:
+- Original derivation paper / Thai cohort publication
+- Official Thai CV Risk calculator implementation
+- Ramathibodi / Mahidol source or implementation
+- Thai Ministry of Public Health
+- Royal College of Physicians of Thailand guidelines
+- Peer-reviewed Thai validation publications
+
+2. Cross-check the mathematical implementation against at least TWO independent authoritative sources.
+
+3. Document explicitly:
+- eligible age range
+- primary-prevention inclusion/exclusion
+- outcome definition
+- prediction horizon
+- sex handling
+- age term(s)
+- SBP term(s)
+- diabetes coding
+- smoking coding
+- height
+- waist circumference
+- waist-to-height ratio if applicable
+- transformations
+- interaction terms
+- coefficients
+- baseline survival / intercept
+- rounding behavior
+- units
+- male/female differences
+
+4. If the official equation cannot be verified with sufficient confidence:
+STOP.
+Do not implement a calculator.
+Produce a verification-gap report describing exactly what cannot be confirmed and what source is still required.
+
+5. If verified, build a GOLDEN VALIDATION SET before UI development.
+Create at least 20–50 synthetic cases covering:
+- male/female
+- low/middle/high age
+- smoker/non-smoker
+- diabetes/no diabetes
+- low/medium/high SBP
+- low/high waist circumference
+- multiple waist-height ratios
+- low/moderate/high predicted risk
+
+For every case record:
+- all inputs
+- expected risk
+- reference implementation/source
+- calculated risk
+- absolute error
+- PASS/FAIL
+
+Use a tolerance consistent with the precision of the official/reference calculator.
+
+NO PRODUCTION DEPLOYMENT until all validation cases pass.
+
+6. Build the architecture with strict separation:
+
+/src
+  /calculator
+    thaiCvNonLab.js
+    validationCases.js
+
+  /eligibility
+    eligibilityRules.js
+
+  /interpretation
+    riskInterpretation.js
+    recommendationRules.js
+
+  /config
+    riskThresholds.js
+    references.js
+
+  /components
+    InputForm
+    ResultCard
+    RiskDrivers
+    RecommendationCard
+    Disclaimer
+
+The equation engine must be independent from the interpretation engine and UI.
+
+7. Core inputs expected for the non-lab pathway:
+- age
+- sex
+- current smoking
+- diabetes
+- systolic blood pressure
+- height
+- waist circumference
+
+Do not assume this list is final until the verified equation confirms it.
+
+8. Eligibility / safety gate:
+This is a PRIMARY PREVENTION risk tool.
+
+Users with established ASCVD/CVD should not receive a primary-prevention risk percentage.
+
+Screen for at least:
+- previous myocardial infarction
+- known coronary artery disease
+- previous stroke/TIA
+- peripheral arterial disease
+- PCI/CABG or other coronary revascularization
+- other established ASCVD as supported by the source model/guideline
+
+For ineligible users, show a clear Thai message explaining that the tool is not designed for them and recommend clinician assessment / secondary prevention rather than calculating a score.
+
+9. Result UX should have FOUR layers:
+
+A. RISK
+Large display:
+“ความเสี่ยงโรคหัวใจและหลอดเลือดใน 10 ปี”
+Example: 12%
+
+B. MEANING
+Explain in plain Thai.
+Example concept:
+“จากข้อมูลที่คุณกรอก คนไทยที่มีลักษณะความเสี่ยงใกล้เคียงกันประมาณ 12 คนจาก 100 คน อาจเกิดโรคหัวใจหรือหลอดเลือดสมองในช่วง 10 ปีข้างหน้า”
+
+Clearly label this as an ESTIMATED population-level risk, not a certainty for an individual.
+
+C. RISK DRIVERS
+Show clinically relevant factors that deserve attention, such as:
+- elevated SBP
+- smoking
+- diabetes
+- central obesity
+- age
+
+Do NOT invent percentage contribution of each factor unless mathematically supported.
+
+D. WHAT TO DO NEXT
+Generate general preventive guidance driven by entered risk factors.
+Examples:
+- elevated BP → repeat BP measurement correctly / evaluate hypertension
+- smoking → smoking cessation
+- diabetes → optimize diabetes and cardiovascular risk-factor control
+- central obesity → weight management, exercise, diet
+
+Do not turn this into autonomous treatment prescribing.
+
+10. RISK CATEGORIES
+The percentage risk must be the primary result.
+
+Any category/color label must be:
+- a communication layer
+- configurable
+- stored separately from the equation engine
+
+Do not hard-code treatment decisions from category labels.
+
+11. Privacy:
+All calculations must occur CLIENT-SIDE.
+
+Do not transmit or store:
+- age
+- disease history
+- blood pressure
+- waist
+- calculated risk
+or other health inputs on a backend.
+
+Do not use analytics that capture medical form values.
+
+12. References / audit page:
+Create a visible section showing:
+- original Thai CV Risk source
+- validation studies
+- current relevant Thai cardiovascular guidelines
+- official/reference calculator source
+- model version
+- date clinically reviewed
+
+13. Footer/versioning:
+HeartCheck Wise
+Thai CV Risk Score – Non-Lab
+Model Version X.X
+Clinical Review Date
+
+14. Future architecture:
+Prepare for future models without enabling them yet:
+- Thai CV Non-Lab
+- Thai CV Lab
+- PREVENT
+- Thai-recalibrated PREVENT
+- future National Thai CVD Risk Score
+
+Consider a model registry (riskModels.js), but activate only Thai CV Non-Lab in this version.
+
+15. RELEASE GATES:
+Do not mark Production Ready until:
+- Equation verified
+- Golden Validation Set passed
+- Eligibility rules reviewed
+- Interpretation wording reviewed
+- Privacy review passed
+- Mobile usability passed
+- Clinical sign-off obtained
+
+16. DEPLOYMENT:
+After validation and implementation, create an isolated UAT deployment first.
+Do not modify the production root until UAT is reviewed and explicitly approved.
+
+17. Deliverables from this session:
+A. Equation verification report
+B. Source list with direct references
+C. Complete mathematical specification
+D. Golden Validation Set
+E. Automated tests
+F. Calculator engine
+G. Eligibility rules
+H. Interpretation engine
+I. UI
+J. UAT build
+K. Release checklist
+
+Before changing code, inspect the existing repository structure, current HeartCheck Wise PREVENT implementation, CI/branding, privacy model, and deployment workflow. Reuse the existing design system where appropriate, but keep Thai CV Risk calculations fully separated from PREVENT.
+
+Do not simplify or bypass validation to save time.
+
+Project name:
+HeartCheck Wise – Thai CV
+
+Suggested public tagline:
+“รู้ความเสี่ยงหัวใจของคุณ โดยไม่ต้องรอผลเลือด”

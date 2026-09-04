@@ -1,0 +1,15 @@
+{
+  "name": "heartcheck-wise-thai-cv",
+  "version": "1.0.0-uat.1",
+  "description": "HeartCheck Wise – Thai CV Risk Score (Non-Lab). Client-side, primary-prevention 10-year cardiovascular risk estimate for Thais.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run-all.js",
+    "test:validation": "node tests/validation.test.js",
+    "test:eligibility": "node tests/eligibility.test.js",
+    "test:interpretation": "node tests/interpretation.test.js",
+    "serve": "node tools/serve.js"
+  },
+  "license": "UNLICENSED"
+}
