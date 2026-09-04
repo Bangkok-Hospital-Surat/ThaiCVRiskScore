@@ -125,6 +125,20 @@ footer strong{color:var(--ink)}
 
 .linklike{background:none;border:none;color:var(--blue);font-weight:800;cursor:pointer;font:inherit;padding:0;text-decoration:underline}
 
+.export-bar{display:flex;gap:12px;flex-wrap:wrap}
+.export-bar .primary,.export-bar .secondary{flex:1;min-width:180px}
+
+/* Print / Save-as-PDF: one clean page, no chrome or buttons */
+@media print{
+  .top,footer,.steps,.no-print,.export-bar,.actions{display:none!important}
+  body{background:#fff}
+  .shell{padding:0;max-width:100%}
+  .card{box-shadow:none;border:none;padding:0;margin:0}
+  .result-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .result-section{break-inside:avoid}
+  @page{margin:14mm}
+}
+
 @media(max-width:720px){
   html{font-size:18px}
   .top{padding:12px 14px;min-height:64px}

@@ -36,7 +36,12 @@ export function ResultCard(interp, reco) {
 
     <div class="result-section">${Disclaimer()}</div>
 
-    <div class="actions">
+    <div class="result-section export-bar no-print">
+      <button class="primary" data-action="share-image">📷 บันทึก / แชร์รูป (LINE)</button>
+      <button class="secondary" data-action="print">🖨️ พิมพ์ / บันทึก PDF</button>
+    </div>
+
+    <div class="actions no-print">
       <button class="secondary" data-action="restart">เริ่มประเมินใหม่</button>
       <button class="secondary" data-action="show-refs">ดูหลักฐานและที่มา</button>
     </div>

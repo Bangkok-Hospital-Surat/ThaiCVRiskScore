@@ -10,6 +10,7 @@ import { getActiveModel } from '../calculator/riskModels.js';
 import { interpretRisk } from '../interpretation/riskInterpretation.js';
 import { buildRecommendations } from '../interpretation/recommendationRules.js';
 import { MODEL_META } from '../config/references.js';
+import { printSummary, shareOrDownloadSummary } from './exportSummary.js';
 
 const app = document.getElementById('app');
 const state = {
@@ -129,6 +130,7 @@ function calculate() {
 
   const interp = interpretRisk(result);
   const reco = buildRecommendations(inp);
+  state.lastResult = { interp, reco, inputs: inp };  // for export
   state.resultHtml = ResultCard(interp, reco);
   state.view = 'result';
   render();
@@ -144,6 +146,20 @@ function showErrors(errors) {
 }
 function clearErrors() {
   document.querySelectorAll('.field-error').forEach(el => { el.hidden = true; el.textContent = ''; });
+}
+
+async function handleShareImage(btn) {
+  if (!state.lastResult) return;
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'กำลังสร้างรูป…';
+  try {
+    const res = await shareOrDownloadSummary(state.lastResult);
+    btn.textContent = res.method === 'download' ? '✅ บันทึกรูปแล้ว' : original;
+  } catch (e) {
+    btn.textContent = '⚠️ สร้างรูปไม่สำเร็จ';
+  } finally {
+    setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2500);
+  }
 }
 
 /* --------------- event delegation --------------- */
@@ -175,6 +191,8 @@ app.addEventListener('click', e => {
       state.view = 'intro'; render(); break;
     case 'show-refs':      state.prevView = state.view; state.view = 'references'; render(); break;
     case 'back-from-refs': state.view = state.prevView || 'intro'; render(); break;
+    case 'print':          printSummary(); break;
+    case 'share-image':    handleShareImage(btn); break;
   }
 });
 
