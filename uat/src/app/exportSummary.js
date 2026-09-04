@@ -1,32 +1,27 @@
 /**
  * exportSummary.js
- * One-page summary export: print/PDF (window.print) and a self-contained PNG
- * result card (drawn on <canvas>, no external libraries — CSP-safe) that can be
- * shared via the native share sheet (LINE on mobile) or downloaded.
+ * One-page summary export as a self-contained result card drawn on <canvas>
+ * (no external libraries — CSP-safe). The card can be exported as:
+ *   - PNG  → shared via the native share sheet (LINE on mobile) or downloaded.
+ *   - PDF  → a minimal single-page PDF that embeds the card as a JPEG, then
+ *            shared or downloaded. This does NOT use window.print(), which is a
+ *            no-op in the LINE in-app browser and several mobile webviews.
  *
- * Privacy: everything happens in the browser. Nothing is uploaded. The image is
- * created only when the user asks, and is handed to the OS share sheet or a
- * local download — no network egress.
+ * Privacy: everything happens in the browser. Nothing is uploaded. Files are
+ * created only when the user asks, and handed to the OS share sheet or a local
+ * download — no network egress.
  */
 import { MODEL_META } from '../config/references.js';
 
 const SEX_TH = { male: 'ชาย', female: 'หญิง' };
 
-/* ---------------- Print / PDF ---------------- */
-export function printSummary() {
-  // The print stylesheet (css/style.css @media print) formats the visible
-  // result card into a clean one-page layout and hides chrome/buttons.
-  window.print();
-}
-
-/* ---------------- PNG result card ---------------- */
+/* ---------------- shared canvas renderer ---------------- */
 const W = 1080;
 const PAD = 64;
 const CW = W - PAD * 2;
 
 function wrap(ctx, text, maxWidth) {
   const lines = [];
-  // split on spaces first; long space-less runs (Thai) are broken by character
   const words = String(text).split(/(\s+)/);
   let line = '';
   const pushChars = (chunk) => {
@@ -44,12 +39,11 @@ function wrap(ctx, text, maxWidth) {
   return lines;
 }
 
-async function buildPngBlob(data) {
+async function renderCardCanvas(data) {
   const { interp, reco, inputs } = data;
   try { await document.fonts.ready; } catch { /* system fonts */ }
 
   const FONT = '"Noto Sans Thai", Inter, Tahoma, sans-serif';
-  // ---- measuring pass on a throwaway context ----
   const meas = document.createElement('canvas').getContext('2d');
   const blocks = [];
   const addText = (text, size, weight, color, gapAfter) => {
@@ -58,51 +52,40 @@ async function buildPngBlob(data) {
     blocks.push({ type: 'text', lines, size, weight, color, lh: Math.round(size * 1.4), gapAfter });
   };
 
-  // header + divider
   blocks.push({ type: 'header' });
-  // headline
   addText(interp.headlineTh, 34, '700', '#0d3155', 12);
-  // risk block placeholder (fixed height)
   blocks.push({ type: 'risk', h: 240, color: interp.band.color,
     pct: interp.displayPercentText, capped: interp.displayCapped, band: interp.band.labelTh, gapAfter: 26 });
-  // meaning
   addText(interp.meaningTh, 32, '400', '#102f52', 8);
   addText(interp.meaningNoteTh, 24, '400', '#526b84', 22);
-  // inputs summary
   const inLine = `ข้อมูลที่ใช้: อายุ ${inputs.age} ปี · ${SEX_TH[inputs.sex] || inputs.sex} · ` +
     `ความดันตัวบน ${inputs.sbp} mmHg · รอบเอว ${inputs.waistCm} ซม. · สูง ${inputs.heightCm} ซม. · ` +
     `${bin(inputs.currentSmoker) ? 'สูบบุหรี่' : 'ไม่สูบบุหรี่'} · ${bin(inputs.diabetes) ? 'เป็นเบาหวาน' : 'ไม่เป็นเบาหวาน'}`;
   addText(inLine, 26, '400', '#284b6c', 18);
-  // drivers
   if (reco.drivers.length) {
     addText('ปัจจัยเสี่ยงที่ควรใส่ใจ: ' + reco.drivers.map(d => d.labelTh).join(' · '), 28, '700', '#b3271e', 14);
   }
-  // recommendations (titles only)
   if (reco.recommendations.length) {
     addText('คำแนะนำ: ' + reco.recommendations.map(r => r.titleTh).join(' · '), 27, '400', '#12614c', 20);
   }
   blocks.push({ type: 'divider', gapAfter: 16 });
-  // disclaimer
   addText('แบบประเมินนี้ใช้ช่วยประเมินความเสี่ยงเบื้องต้น ไม่ใช่การวินิจฉัยโรคหรือคำแนะนำการรักษา ' +
     'ควรพิจารณาร่วมกับคำแนะนำของบุคลากรทางการแพทย์', 23, '400', '#6b4d16', 14);
-  // footer
   const gen = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
   const reviewed = MODEL_META.clinicalReviewDate || 'PRE-UAT (ยังไม่รับรองทางคลินิก)';
   addText(`${MODEL_META.appName} · ${MODEL_META.moduleName} · Model ${MODEL_META.modelVersion} · Clinical Review: ${reviewed} · สร้างเมื่อ ${gen}`,
     21, '400', '#526b84', 0);
 
-  // ---- compute total height ----
   let y = PAD;
   const HEADER_H = 92, DIVIDER_GAP = 22;
   for (const b of blocks) {
     if (b.type === 'header') y += HEADER_H;
     else if (b.type === 'risk') y += b.h + (b.gapAfter || 0);
     else if (b.type === 'divider') y += DIVIDER_GAP + (b.gapAfter || 0);
-    else { y += b.lines.length * b.lh + (b.gapAfter || 0); }
+    else y += b.lines.length * b.lh + (b.gapAfter || 0);
   }
   const H = Math.round(y + PAD);
 
-  // ---- render pass ----
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -124,8 +107,7 @@ async function buildPngBlob(data) {
       roundRect(ctx, PAD, y, CW, b.h, 24); ctx.fillStyle = b.color; ctx.fill();
       ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
       ctx.font = `800 130px ${FONT}`;
-      const pctText = b.capped ? b.pct + '%' : b.pct + '%';
-      ctx.fillText(pctText, W / 2, y + 40);
+      ctx.fillText(b.pct + '%', W / 2, y + 40);
       ctx.font = `700 40px ${FONT}`;
       ctx.fillText(b.band, W / 2, y + 180);
       ctx.textAlign = 'left';
@@ -141,16 +123,72 @@ async function buildPngBlob(data) {
       y += (b.gapAfter || 0);
     }
   }
+  return canvas;
+}
 
+/* ---------------- PNG ---------------- */
+export async function buildPngBlob(data) {
+  const canvas = await renderCardCanvas(data);
   return await new Promise(res => canvas.toBlob(res, 'image/png'));
 }
 
-export async function shareOrDownloadSummary(data) {
-  const blob = await buildPngBlob(data);
-  if (!blob) return { ok: false, reason: 'no-blob' };
-  const file = new File([blob], 'thai-cv-risk-summary.png', { type: 'image/png' });
+/* ---------------- PDF (single page, embeds card as JPEG) ---------------- */
+export async function buildPdfBlob(data) {
+  const canvas = await renderCardCanvas(data);
+  const jpeg = dataUrlToBytes(canvas.toDataURL('image/jpeg', 0.92));
+  return buildImagePdf(jpeg, canvas.width, canvas.height);
+}
 
-  // Prefer native share sheet (LINE etc.) on capable devices.
+function buildImagePdf(jpeg, imgW, imgH) {
+  const pageW = 595.28, pageH = 841.89, margin = 28;   // A4 points
+  const availW = pageW - 2 * margin, availH = pageH - 2 * margin;
+  let dW = availW, dH = dW * (imgH / imgW);
+  if (dH > availH) { const s = availH / dH; dW *= s; dH *= s; }
+  const x = (pageW - dW) / 2, yTop = pageH - margin - dH;
+  const content =
+    `q\n${dW.toFixed(2)} 0 0 ${dH.toFixed(2)} ${x.toFixed(2)} ${yTop.toFixed(2)} cm\n/Im0 Do\nQ\n`;
+  const contentBytes = enc(content);
+
+  const chunks = []; let pos = 0; const xref = [];
+  const add = b => { chunks.push(b); pos += b.length; };
+  const addObj = (n, dict, stream) => {
+    xref[n] = pos;
+    add(enc(`${n} 0 obj\n`)); add(enc(dict));
+    if (stream) { add(enc(`\nstream\n`)); add(stream); add(enc(`\nendstream`)); }
+    add(enc(`\nendobj\n`));
+  };
+
+  add(enc('%PDF-1.4\n'));
+  add(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A])); // binary marker
+  addObj(1, `<< /Type /Catalog /Pages 2 0 R >>`);
+  addObj(2, `<< /Type /Pages /Kids [3 0 R] /Count 1 >>`);
+  addObj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW.toFixed(2)} ${pageH.toFixed(2)}] ` +
+            `/Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+  addObj(4, `<< /Type /XObject /Subtype /Image /Width ${imgW} /Height ${imgH} /ColorSpace /DeviceRGB ` +
+            `/BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>`, jpeg);
+  addObj(5, `<< /Length ${contentBytes.length} >>`, contentBytes);
+
+  const xrefPos = pos;
+  let xr = `xref\n0 6\n0000000000 65535 f \n`;
+  for (let i = 1; i <= 5; i++) xr += String(xref[i]).padStart(10, '0') + ' 00000 n \n';
+  add(enc(xr));
+  add(enc(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`));
+
+  let total = 0; for (const c of chunks) total += c.length;
+  const out = new Uint8Array(total); let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.length; }
+  return new Blob([out], { type: 'application/pdf' });
+}
+
+/* ---------------- share / download ---------------- */
+export async function shareOrDownloadSummary(data, format = 'png') {
+  const isPdf = format === 'pdf';
+  const blob = isPdf ? await buildPdfBlob(data) : await buildPngBlob(data);
+  if (!blob) return { ok: false, reason: 'no-blob' };
+  const name = isPdf ? 'thai-cv-risk-summary.pdf' : 'thai-cv-risk-summary.png';
+  const type = isPdf ? 'application/pdf' : 'image/png';
+  const file = new File([blob], name, { type });
+
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({
@@ -164,15 +202,23 @@ export async function shareOrDownloadSummary(data) {
       // fall through to download
     }
   }
-  // Fallback: download the PNG.
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'thai-cv-risk-summary.png';
+  a.href = url; a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
   return { ok: true, method: 'download' };
 }
 
+/* ---------------- helpers ---------------- */
+function enc(s) { return new TextEncoder().encode(s); }
+function dataUrlToBytes(dataUrl) {
+  const b64 = dataUrl.split(',')[1];
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
 function roundRect(ctx, x, y, w, h, r) {
   if (ctx.roundRect) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); return; }
   ctx.beginPath();

@@ -10,7 +10,7 @@ import { getActiveModel } from '../calculator/riskModels.js';
 import { interpretRisk } from '../interpretation/riskInterpretation.js';
 import { buildRecommendations } from '../interpretation/recommendationRules.js';
 import { MODEL_META } from '../config/references.js';
-import { printSummary, shareOrDownloadSummary } from './exportSummary.js';
+import { shareOrDownloadSummary } from './exportSummary.js';
 
 const app = document.getElementById('app');
 const state = {
@@ -148,15 +148,16 @@ function clearErrors() {
   document.querySelectorAll('.field-error').forEach(el => { el.hidden = true; el.textContent = ''; });
 }
 
-async function handleShareImage(btn) {
+async function handleExport(btn, format) {
   if (!state.lastResult) return;
   const original = btn.textContent;
-  btn.disabled = true; btn.textContent = 'กำลังสร้างรูป…';
+  const noun = format === 'pdf' ? 'PDF' : 'รูป';
+  btn.disabled = true; btn.textContent = `กำลังสร้าง${noun}…`;
   try {
-    const res = await shareOrDownloadSummary(state.lastResult);
-    btn.textContent = res.method === 'download' ? '✅ บันทึกรูปแล้ว' : original;
+    const res = await shareOrDownloadSummary(state.lastResult, format);
+    btn.textContent = res.method === 'download' ? `✅ บันทึก${noun}แล้ว` : original;
   } catch (e) {
-    btn.textContent = '⚠️ สร้างรูปไม่สำเร็จ';
+    btn.textContent = `⚠️ สร้าง${noun}ไม่สำเร็จ`;
   } finally {
     setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2500);
   }
@@ -191,8 +192,8 @@ app.addEventListener('click', e => {
       state.view = 'intro'; render(); break;
     case 'show-refs':      state.prevView = state.view; state.view = 'references'; render(); break;
     case 'back-from-refs': state.view = state.prevView || 'intro'; render(); break;
-    case 'print':          printSummary(); break;
-    case 'share-image':    handleShareImage(btn); break;
+    case 'save-pdf':       handleExport(btn, 'pdf'); break;
+    case 'share-image':    handleExport(btn, 'png'); break;
   }
 });
 

@@ -38,7 +38,7 @@ export function ResultCard(interp, reco) {
 
     <div class="result-section export-bar no-print">
       <button class="primary" data-action="share-image">📷 บันทึก / แชร์รูป (LINE)</button>
-      <button class="secondary" data-action="print">🖨️ พิมพ์ / บันทึก PDF</button>
+      <button class="secondary" data-action="save-pdf">📄 บันทึก / แชร์ PDF</button>
     </div>
 
     <div class="actions no-print">
