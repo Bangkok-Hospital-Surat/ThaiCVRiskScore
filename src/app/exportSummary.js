@@ -39,9 +39,24 @@ function wrap(ctx, text, maxWidth) {
   return lines;
 }
 
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => res(im);
+    im.onerror = rej;
+    im.src = src;
+  });
+}
+
+// Same-origin footer banner (hospital logo + contact + QR). Same-origin so it
+// does NOT taint the canvas (toBlob/toDataURL still work).
+const BANNER_URL = new URL('../../assets/bsr-footer-banner.jpg', import.meta.url).href;
+
 async function renderCardCanvas(data) {
   const { interp, reco, inputs } = data;
   try { await document.fonts.ready; } catch { /* system fonts */ }
+  let banner = null;
+  try { banner = await loadImage(BANNER_URL); } catch { /* banner optional */ }
 
   const FONT = '"Noto Sans Thai", Inter, Tahoma, sans-serif';
   const meas = document.createElement('canvas').getContext('2d');
@@ -76,12 +91,18 @@ async function renderCardCanvas(data) {
   addText(`${MODEL_META.appName} · ${MODEL_META.moduleName} · Model ${MODEL_META.modelVersion} · Clinical Review: ${reviewed} · สร้างเมื่อ ${gen}`,
     21, '400', '#526b84', 0);
 
+  // Footer banner (hospital logo + contact + QR) at the very bottom.
+  if (banner && banner.naturalWidth) {
+    blocks.push({ type: 'banner', img: banner, h: Math.round(CW * (banner.naturalHeight / banner.naturalWidth)), gapBefore: 30 });
+  }
+
   let y = PAD;
   const HEADER_H = 92, DIVIDER_GAP = 22;
   for (const b of blocks) {
     if (b.type === 'header') y += HEADER_H;
     else if (b.type === 'risk') y += b.h + (b.gapAfter || 0);
     else if (b.type === 'divider') y += DIVIDER_GAP + (b.gapAfter || 0);
+    else if (b.type === 'banner') y += (b.gapBefore || 0) + b.h;
     else y += b.lines.length * b.lh + (b.gapAfter || 0);
   }
   const H = Math.round(y + PAD);
@@ -117,6 +138,10 @@ async function renderCardCanvas(data) {
       ctx.strokeStyle = '#e6eef5'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W - PAD, y); ctx.stroke();
       y += (DIVIDER_GAP / 2) + (b.gapAfter || 0);
+    } else if (b.type === 'banner') {
+      y += (b.gapBefore || 0);
+      ctx.drawImage(b.img, PAD, y, CW, b.h);
+      y += b.h;
     } else {
       ctx.font = `${b.weight} ${b.size}px ${FONT}`; ctx.fillStyle = b.color;
       for (const ln of b.lines) { ctx.fillText(ln, PAD, y); y += b.lh; }

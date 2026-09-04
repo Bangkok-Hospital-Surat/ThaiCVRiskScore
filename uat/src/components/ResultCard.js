@@ -36,6 +36,10 @@ export function ResultCard(interp, reco) {
 
     <div class="result-section">${Disclaimer()}</div>
 
+    <div class="result-section report-banner">
+      <img src="assets/bsr-footer-banner.jpg" alt="โรงพยาบาลกรุงเทพสุราษฎร์ Bangkok Hospital Surat · โทร 1719">
+    </div>
+
     <div class="result-section export-bar no-print">
       <button class="primary" data-action="share-image">📷 บันทึก / แชร์รูป (LINE)</button>
       <button class="secondary" data-action="save-pdf">📄 บันทึก / แชร์ PDF</button>

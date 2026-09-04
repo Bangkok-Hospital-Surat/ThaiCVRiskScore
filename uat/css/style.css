@@ -125,6 +125,8 @@ footer strong{color:var(--ink)}
 
 .linklike{background:none;border:none;color:var(--blue);font-weight:800;cursor:pointer;font:inherit;padding:0;text-decoration:underline}
 
+.report-banner{padding-top:16px}
+.report-banner img{display:block;width:100%;height:auto;border-radius:8px}
 .export-bar{display:flex;gap:12px;flex-wrap:wrap}
 .export-bar .primary,.export-bar .secondary{flex:1;min-width:180px}
 
