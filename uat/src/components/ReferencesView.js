@@ -14,6 +14,7 @@ export function ReferencesView() {
   return `
   <div class="card">
     <h2>หลักฐานและที่มาของแบบประเมิน</h2>
+    <p>${MODEL_META.basisNote}</p>
     <p class="muted">โมเดล: <strong>${MODEL_META.equationSource}</strong><br>
       สถานะการตรวจสอบสมการ: <strong>${MODEL_META.equationStatus}</strong></p>
 

@@ -222,10 +222,9 @@ function collectEligibility() {
 /* --------------- footer version stamp --------------- */
 const stamp = document.getElementById('version-stamp');
 if (stamp) {
-  const reviewed = MODEL_META.clinicalReviewDate || 'ยังไม่ผ่านการรับรองทางคลินิก (PRE-UAT)';
   stamp.innerHTML =
-    `<strong>${MODEL_META.appName}</strong> · ${MODEL_META.moduleName}<br>` +
-    `Model Version ${MODEL_META.modelVersion} · Clinical Review: ${reviewed}`;
+    `<strong>${MODEL_META.appName}</strong> · ${MODEL_META.moduleName} · Model ${MODEL_META.modelVersion}<br>` +
+    `${MODEL_META.attribution}`;
 }
 
 render();

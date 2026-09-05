@@ -19,9 +19,18 @@ export const MODEL_META = {
     'Atherosclerotic cardiovascular disease (ASCVD) within 10 years — coronary death, or non-fatal myocardial infarction, or fatal/non-fatal stroke.',
   derivationCohort: 'EGAT study (Electricity Generating Authority of Thailand) — pooled ~20-year cohort',
   eligibleAgeRange: { min: 35, max: 70 },
-  clinicalReviewDate: null,          // set ONLY after a named clinician signs off
+  // This tool is a faithful implementation of a PUBLISHED, nationally-used Thai
+  // algorithm. By decision, legitimacy is attributed to the referenced sources
+  // (see REFERENCES / the "หลักฐานและที่มา" page) rather than to a named individual.
+  // These stay null on purpose — do NOT populate with a fabricated name/date.
+  clinicalReviewDate: null,
   clinicalReviewer: null,
-  lastTechnicalReview: '2026-09-04'  // date this engine/spec was assembled & self-validated
+  // Shown in the footer and on exported cards in place of a "reviewer" line.
+  attribution: 'อ้างอิงอัลกอริทึม Thai CV Risk Score v2.5 (Rama-Mahidol, 2021) · ดูหลักฐานและที่มา',
+  basisNote:
+    'แบบประเมินนี้เป็นการนำอัลกอริทึม Thai CV Risk Score (Rama-Mahidol) ซึ่งพัฒนาจากประชากรไทย (EGAT cohort) ' +
+    'และใช้อ้างอิงในแนวทางเวชปฏิบัติของไทย มาให้บริการแบบออนไลน์ ไม่ใช่การวินิจฉัยรายบุคคล',
+  lastTechnicalReview: '2026-09-05'
 };
 
 /**

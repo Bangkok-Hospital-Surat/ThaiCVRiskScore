@@ -1,6 +1,6 @@
 {
   "name": "heartcheck-wise-thai-cv",
-  "version": "1.0.0-uat.1",
+  "version": "1.0.0",
   "description": "HeartCheck Wise – Thai CV Risk Score (Non-Lab). Client-side, primary-prevention 10-year cardiovascular risk estimate for Thais.",
   "type": "module",
   "private": true,

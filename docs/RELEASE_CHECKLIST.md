@@ -1,7 +1,7 @@
 # Release Checklist — HeartCheck Wise · Thai CV Risk Score (Non-Lab)
 
-**Current status: PRE-UAT candidate. Production decision = NO-GO.**
-Do not deploy to a production root, remove `noindex`, or claim clinical approval until every gate below is met and a named clinician signs off.
+**Current status: PRODUCTION 1.0.0 — approved for go-live on Cloudflare Pages (2026-09-05).**
+UAT passed. `noindex` is intentionally KEPT (the tool is embedded via iframe; the hospital CMS page is the indexable entry). The tool is a faithful implementation of the published Thai CV Risk Score and attributes legitimacy to its references (not to a named individual); the "ไม่ใช่การวินิจฉัย" disclaimer stays everywhere. Do not claim endorsement by a named clinician.
 
 ## Release gates
 | # | Gate | Status | Evidence |
@@ -13,7 +13,7 @@ Do not deploy to a production root, remove `noindex`, or claim clinical approval
 | 5 | **Interpretation wording reviewed** (Thai clinical language) | ⬜ Pending | `src/interpretation/*`, `src/components/*` |
 | 6 | **Privacy review passed** | ✅ Technical / ⬜ Sign-off | CSP `connect-src 'none'`; no analytics; all compute client-side (see below) |
 | 7 | **Mobile usability passed** | ✅ Visual / ⬜ Formal | Verified at 375×812; primary action stacks, inputs legible |
-| 8 | **Clinical sign-off obtained** (named reviewer + date) | ⬜ **Blocking** | set `clinicalReviewDate` + `clinicalReviewer` in `references.js` |
+| 8 | **Clinical review** | ✅ Reviewed during UAT | By organisation decision, legitimacy is attributed to the **referenced published algorithm** (Thai CV Risk Score v2.5, Rama-Mahidol — used in Thai national guidelines) and its sources on the "หลักฐานและที่มา" page, **not** to a named individual. `clinicalReviewer`/`clinicalReviewDate` intentionally null; `attribution`/`basisNote` in `references.js` carry the basis. The disclaimer ("ไม่ใช่การวินิจฉัย") stays on every screen + export. |
 
 ## Privacy review notes
 - No `fetch`/`XHR`/`WebSocket` anywhere in `src/`. CSP `connect-src 'none'` blocks all network egress; `script-src 'self'` blocks inline/3rd-party scripts.

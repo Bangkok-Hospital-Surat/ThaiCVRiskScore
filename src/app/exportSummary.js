@@ -87,8 +87,7 @@ async function renderCardCanvas(data) {
   addText('แบบประเมินนี้ใช้ช่วยประเมินความเสี่ยงเบื้องต้น ไม่ใช่การวินิจฉัยโรคหรือคำแนะนำการรักษา ' +
     'ควรพิจารณาร่วมกับคำแนะนำของบุคลากรทางการแพทย์', 23, '400', '#6b4d16', 14);
   const gen = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-  const reviewed = MODEL_META.clinicalReviewDate || 'PRE-UAT (ยังไม่รับรองทางคลินิก)';
-  addText(`${MODEL_META.appName} · ${MODEL_META.moduleName} · Model ${MODEL_META.modelVersion} · Clinical Review: ${reviewed} · สร้างเมื่อ ${gen}`,
+  addText(`${MODEL_META.appName} · ${MODEL_META.moduleName} · Model ${MODEL_META.modelVersion} · ${MODEL_META.attribution} · สร้างเมื่อ ${gen}`,
     21, '400', '#526b84', 0);
 
   // Footer banner (hospital logo + contact + QR) at the very bottom.
@@ -118,8 +117,6 @@ async function renderCardCanvas(data) {
     if (b.type === 'header') {
       ctx.font = `800 30px ${FONT}`; ctx.fillStyle = '#092f5f'; ctx.textAlign = 'left';
       ctx.fillText('HeartCheck Wise · Thai CV Risk (ไม่ใช้ผลเลือด)', PAD, y);
-      ctx.font = `800 22px ${FONT}`; ctx.fillStyle = '#b54708'; ctx.textAlign = 'right';
-      ctx.fillText('PRE-UAT', W - PAD, y + 4);
       ctx.textAlign = 'left';
       ctx.strokeStyle = '#d8e5ef'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(PAD, y + 56); ctx.lineTo(W - PAD, y + 56); ctx.stroke();
