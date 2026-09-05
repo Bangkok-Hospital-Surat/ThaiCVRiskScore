@@ -48,109 +48,161 @@ function loadImage(src) {
   });
 }
 
-// Same-origin footer banner (hospital logo + contact + QR). Same-origin so it
-// does NOT taint the canvas (toBlob/toDataURL still work).
+// Same-origin assets. Same-origin => they do NOT taint the canvas.
 const BANNER_URL = new URL('../../assets/bsr-footer-banner.jpg', import.meta.url).href;
+const LOGO_URL = new URL('../../assets/BSR-landscape-logo.png', import.meta.url).href;
 
+const FONT = '"Noto Sans Thai", Inter, Tahoma, sans-serif';
+const INK = '#102f52', MUTED = '#556070', NAVY = '#0d3155';
+const GAP = 16, TOP = 44, BOT = 44;
+
+/*
+ * Letterhead layout (like the PREVENT one-pager): hospital logo + title + date
+ * on top, a horizontal rule, then framed content boxes, and the contact banner
+ * at the foot. Two passes: measure section heights, then draw.
+ */
 async function renderCardCanvas(data) {
   const { interp, reco, inputs } = data;
   try { await document.fonts.ready; } catch { /* system fonts */ }
-  let banner = null;
-  try { banner = await loadImage(BANNER_URL); } catch { /* banner optional */ }
+  let banner = null, logo = null;
+  try { banner = await loadImage(BANNER_URL); } catch { /* optional */ }
+  try { logo = await loadImage(LOGO_URL); } catch { /* optional */ }
 
-  const FONT = '"Noto Sans Thai", Inter, Tahoma, sans-serif';
   const meas = document.createElement('canvas').getContext('2d');
-  const blocks = [];
-  const addText = (text, size, weight, color, gapAfter) => {
-    meas.font = `${weight} ${size}px ${FONT}`;
-    const lines = wrap(meas, text, CW);
-    blocks.push({ type: 'text', lines, size, weight, color, lh: Math.round(size * 1.4), gapAfter });
-  };
-
-  blocks.push({ type: 'header' });
-  addText(interp.headlineTh, 34, '700', '#0d3155', 12);
-  blocks.push({ type: 'risk', h: 240, color: interp.band.color,
-    pct: interp.displayPercentText, capped: interp.displayCapped, band: interp.band.labelTh, gapAfter: 26 });
-  addText(interp.meaningTh, 32, '400', '#102f52', 8);
-  addText(interp.meaningNoteTh, 24, '400', '#526b84', 22);
-  const inLine = `ข้อมูลที่ใช้: อายุ ${inputs.age} ปี · ${SEX_TH[inputs.sex] || inputs.sex} · ` +
-    `ความดันตัวบน ${inputs.sbp} mmHg · รอบเอว ${inputs.waistCm} ซม. · สูง ${inputs.heightCm} ซม. · ` +
-    `${bin(inputs.currentSmoker) ? 'สูบบุหรี่' : 'ไม่สูบบุหรี่'} · ${bin(inputs.diabetes) ? 'เป็นเบาหวาน' : 'ไม่เป็นเบาหวาน'}`;
-  addText(inLine, 26, '400', '#284b6c', 18);
-  if (reco.drivers.length) {
-    addText('ปัจจัยเสี่ยงที่ควรใส่ใจ: ' + reco.drivers.map(d => d.labelTh).join(' · '), 28, '700', '#b3271e', 14);
-  }
-  if (reco.recommendations.length) {
-    addText('คำแนะนำ: ' + reco.recommendations.map(r => r.titleTh).join(' · '), 27, '400', '#12614c', 20);
-  }
-  blocks.push({ type: 'divider', gapAfter: 16 });
-  addText('แบบประเมินนี้ใช้ช่วยประเมินความเสี่ยงเบื้องต้น ไม่ใช่การวินิจฉัยโรคหรือคำแนะนำการรักษา ' +
-    'ควรพิจารณาร่วมกับคำแนะนำของบุคลากรทางการแพทย์', 23, '400', '#6b4d16', 14);
+  const wrapAt = (text, size, weight, maxW) => { meas.font = `${weight} ${size}px ${FONT}`; return wrap(meas, text, maxW); };
   const gen = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-  addText(`${MODEL_META.appName} · ${MODEL_META.moduleName} · Model ${MODEL_META.modelVersion} · ${MODEL_META.attribution} · สร้างเมื่อ ${gen}`,
-    21, '400', '#526b84', 0);
 
-  // Footer banner (hospital logo + contact + QR) at the very bottom.
+  const sections = [];
+  const CPAD = 26; // inner padding of framed cards
+
+  // Framed card: optional title + paragraphs, on a tinted rounded box.
+  function card(opts) {
+    const innerW = CW - CPAD * 2;
+    let h = CPAD;
+    let title = null;
+    if (opts.title) {
+      const lines = wrapAt(opts.title.text, opts.title.size, opts.title.weight, innerW);
+      title = { ...opts.title, lines, lh: Math.round(opts.title.size * 1.4) };
+      h += lines.length * title.lh + 8;
+    }
+    const paras = (opts.paras || []).map(p => {
+      const lines = wrapAt(p.text, p.size, p.weight, innerW);
+      const lh = Math.round(p.size * 1.42);
+      h += lines.length * lh + (p.gap == null ? 6 : p.gap);
+      return { ...p, lines, lh };
+    });
+    h += CPAD - 6;
+    sections.push({ type: 'card', fill: opts.fill, border: opts.border, title, paras, h: Math.round(h) });
+  }
+
+  // ---- letterhead ----
+  const logoH = 50, logoW = logo ? Math.round(logoH * (logo.naturalWidth / logo.naturalHeight)) : 0;
+  sections.push({ type: 'letterhead', h: 100, logoW, logoH });
+
+  // ---- risk (solid colour box) ----
+  sections.push({ type: 'risk', h: 210, color: interp.band.color, headline: interp.headlineTh,
+    pct: interp.displayPercentText, band: interp.band.labelTh });
+
+  // ---- meaning ----
+  card({ fill: '#f7fafd', border: '#e2ecf5', paras: [
+    { text: interp.meaningTh, size: 31, weight: '400', color: INK, gap: 8 },
+    { text: interp.meaningNoteTh, size: 22, weight: '400', color: MUTED, gap: 0 },
+  ]});
+
+  // ---- inputs used ----
+  const inLine = `อายุ ${inputs.age} ปี · ${SEX_TH[inputs.sex] || inputs.sex} · ความดันตัวบน ${inputs.sbp} mmHg · ` +
+    `รอบเอว ${inputs.waistCm} ซม. · สูง ${inputs.heightCm} ซม. · ` +
+    `${bin(inputs.currentSmoker) ? 'สูบบุหรี่' : 'ไม่สูบบุหรี่'} · ${bin(inputs.diabetes) ? 'เป็นเบาหวาน' : 'ไม่เป็นเบาหวาน'}`;
+  card({ fill: '#ffffff', border: '#e2ecf5', title: { text: 'ข้อมูลที่ใช้ประเมิน', size: 23, weight: '700', color: NAVY },
+    paras: [{ text: inLine, size: 24, weight: '400', color: '#284b6c', gap: 0 }] });
+
+  // ---- risk drivers ----
+  if (reco.drivers.length) {
+    card({ fill: '#fff6f5', border: '#f3cdc9', title: { text: 'ปัจจัยเสี่ยงที่ควรใส่ใจ', size: 23, weight: '700', color: '#b3271e' },
+      paras: [{ text: reco.drivers.map(d => d.labelTh).join('   ·   '), size: 25, weight: '700', color: '#b3271e', gap: 0 }] });
+  }
+
+  // ---- what to do next ----
+  if (reco.recommendations.length) {
+    card({ fill: '#f1faf4', border: '#c9e8d5', title: { text: 'สิ่งที่ควรทำต่อไป', size: 23, weight: '700', color: '#12614c' },
+      paras: reco.recommendations.map(r => ({ text: '•  ' + r.titleTh, size: 24, weight: '700', color: '#12614c', gap: 4 })) });
+  }
+
+  // ---- disclaimer ----
+  card({ fill: '#fff8ec', border: '#f0dcae', paras: [
+    { text: 'แบบประเมินนี้ใช้ช่วยประเมินความเสี่ยงเบื้องต้น ไม่ใช่การวินิจฉัยโรคหรือคำแนะนำการรักษา ควรพิจารณาร่วมกับคำแนะนำของบุคลากรทางการแพทย์',
+      size: 21, weight: '400', color: '#6b4d16', gap: 0 }] });
+
+  // ---- footer attribution ----
+  const attrText = `${MODEL_META.appName} · ${MODEL_META.moduleName} · Model ${MODEL_META.modelVersion} · ${MODEL_META.attribution} · สร้างเมื่อ ${gen}`;
+  const attrLines = wrapAt(attrText, 19, '400', CW);
+  sections.push({ type: 'attr', lines: attrLines, size: 19, lh: 26, h: attrLines.length * 26 + 6 });
+
+  // ---- contact banner ----
   if (banner && banner.naturalWidth) {
-    blocks.push({ type: 'banner', img: banner, h: Math.round(CW * (banner.naturalHeight / banner.naturalWidth)), gapBefore: 30 });
+    sections.push({ type: 'banner', img: banner, gapBefore: 12, h: Math.round(CW * (banner.naturalHeight / banner.naturalWidth)) });
   }
 
-  let y = PAD;
-  const HEADER_H = 92, DIVIDER_GAP = 22;
-  for (const b of blocks) {
-    if (b.type === 'header') y += HEADER_H;
-    else if (b.type === 'risk') y += b.h + (b.gapAfter || 0);
-    else if (b.type === 'divider') y += DIVIDER_GAP + (b.gapAfter || 0);
-    else if (b.type === 'banner') y += (b.gapBefore || 0) + b.h;
-    else y += b.lines.length * b.lh + (b.gapAfter || 0);
-  }
-  const H = Math.round(y + PAD);
+  // ---- total height ----
+  let total = TOP;
+  sections.forEach((s, i) => { total += (s.gapBefore || 0) + s.h + (i < sections.length - 1 ? GAP : 0); });
+  const H = Math.round(total + BOT);
 
+  // ---- draw ----
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = 'top';
 
-  y = PAD;
-  for (const b of blocks) {
-    if (b.type === 'header') {
-      ctx.font = `800 30px ${FONT}`; ctx.fillStyle = '#092f5f'; ctx.textAlign = 'left';
-      ctx.fillText('HeartCheck Wise · Thai CV Risk (ไม่ใช้ผลเลือด)', PAD, y);
+  let y = TOP;
+  for (const s of sections) {
+    y += (s.gapBefore || 0);
+    if (s.type === 'letterhead') {
+      if (logo) ctx.drawImage(logo, PAD, y + 2, s.logoW, s.logoH);
+      const tx = PAD + (logo ? s.logoW + 22 : 0);
+      if (logo) { ctx.strokeStyle = '#d8e5ef'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tx - 11, y + 4); ctx.lineTo(tx - 11, y + s.logoH); ctx.stroke(); }
+      ctx.textAlign = 'left'; ctx.fillStyle = NAVY; ctx.font = `800 30px ${FONT}`;
+      ctx.fillText('HeartCheck Wise', tx, y + 3);
+      ctx.fillStyle = MUTED; ctx.font = `400 20px ${FONT}`;
+      ctx.fillText('Thai CV Risk Score · ไม่ใช้ผลเลือด', tx, y + 40);
+      ctx.textAlign = 'right'; ctx.fillStyle = MUTED; ctx.font = `700 20px ${FONT}`;
+      ctx.fillText(gen, W - PAD, y + 12);
       ctx.textAlign = 'left';
       ctx.strokeStyle = '#d8e5ef'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(PAD, y + 56); ctx.lineTo(W - PAD, y + 56); ctx.stroke();
-      y += HEADER_H;
-    } else if (b.type === 'risk') {
-      roundRect(ctx, PAD, y, CW, b.h, 24); ctx.fillStyle = b.color; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(PAD, y + s.h - 12); ctx.lineTo(W - PAD, y + s.h - 12); ctx.stroke();
+    } else if (s.type === 'risk') {
+      roundRect(ctx, PAD, y, CW, s.h, 20); ctx.fillStyle = s.color; ctx.fill();
       ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
-      // Auto-fit the risk text so long values (e.g. "มากกว่า 30%") never clip.
-      const pctText = b.pct + '%';
-      const maxW = CW - 90;
-      let fs = 130;
+      ctx.font = `700 25px ${FONT}`; ctx.fillText(s.headline, W / 2, y + 22);
+      const pctText = s.pct + '%'; const maxW = CW - 120; let fs = 104;
       ctx.font = `800 ${fs}px ${FONT}`;
       while (fs > 44 && ctx.measureText(pctText).width > maxW) { fs -= 4; ctx.font = `800 ${fs}px ${FONT}`; }
-      ctx.textBaseline = 'middle';
-      ctx.fillText(pctText, W / 2, y + 96);
-      ctx.textBaseline = 'top';
-      ctx.font = `700 40px ${FONT}`;
-      ctx.fillText(b.band, W / 2, y + 176);
+      ctx.textBaseline = 'middle'; ctx.fillText(pctText, W / 2, y + 104);
+      ctx.textBaseline = 'top'; ctx.font = `700 34px ${FONT}`;
+      ctx.fillText(s.band, W / 2, y + s.h - 46);
       ctx.textAlign = 'left';
-      y += b.h + (b.gapAfter || 0);
-    } else if (b.type === 'divider') {
-      y += (DIVIDER_GAP / 2);
-      ctx.strokeStyle = '#e6eef5'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(PAD, y); ctx.lineTo(W - PAD, y); ctx.stroke();
-      y += (DIVIDER_GAP / 2) + (b.gapAfter || 0);
-    } else if (b.type === 'banner') {
-      y += (b.gapBefore || 0);
-      ctx.drawImage(b.img, PAD, y, CW, b.h);
-      y += b.h;
-    } else {
-      ctx.font = `${b.weight} ${b.size}px ${FONT}`; ctx.fillStyle = b.color;
-      for (const ln of b.lines) { ctx.fillText(ln, PAD, y); y += b.lh; }
-      y += (b.gapAfter || 0);
+    } else if (s.type === 'card') {
+      roundRect(ctx, PAD, y, CW, s.h, 16); ctx.fillStyle = s.fill; ctx.fill();
+      if (s.border) { ctx.strokeStyle = s.border; ctx.lineWidth = 1.5; ctx.stroke(); }
+      let cy = y + CPAD; ctx.textAlign = 'left';
+      if (s.title) {
+        ctx.font = `${s.title.weight} ${s.title.size}px ${FONT}`; ctx.fillStyle = s.title.color;
+        for (const ln of s.title.lines) { ctx.fillText(ln, PAD + CPAD, cy); cy += s.title.lh; }
+        cy += 8;
+      }
+      for (const p of s.paras) {
+        ctx.font = `${p.weight} ${p.size}px ${FONT}`; ctx.fillStyle = p.color;
+        for (const ln of p.lines) { ctx.fillText(ln, PAD + CPAD, cy); cy += p.lh; }
+        cy += (p.gap == null ? 6 : p.gap);
+      }
+    } else if (s.type === 'attr') {
+      ctx.textAlign = 'left'; ctx.font = `400 ${s.size}px ${FONT}`; ctx.fillStyle = MUTED;
+      let cy = y; for (const ln of s.lines) { ctx.fillText(ln, PAD, cy); cy += s.lh; }
+    } else if (s.type === 'banner') {
+      ctx.drawImage(s.img, PAD, y, CW, s.h);
     }
+    y += s.h + GAP;
   }
   return canvas;
 }
