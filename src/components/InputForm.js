@@ -7,12 +7,16 @@ export function EligibilityForm() {
   return `
   <div class="card safety-card">
     <h2>ขั้นที่ 1 · คัดกรองความเหมาะสม</h2>
-    <p class="muted">แบบประเมินนี้สำหรับผู้ที่ <strong>ยังไม่เคยได้รับการวินิจฉัย</strong> ว่าเป็นโรคหัวใจและหลอดเลือด
-      กรุณาเลือกข้อที่ตรงกับท่าน (ถ้ามี)</p>
+    <p class="muted">แบบประเมินนี้สำหรับผู้ที่ <strong>ยังไม่เคยได้รับการวินิจฉัย</strong> ว่าเป็นโรคหัวใจและหลอดเลือด</p>
+    <p class="section-label">หากท่านเคยมีภาวะเหล่านี้ กรุณาเลือก:</p>
     <div class="checks">${checks}</div>
+    <div class="elig-or">— หรือ —</div>
+    <div class="checks">
+      <label class="none-option"><input type="checkbox" id="elig-none"> <span>ฉันไม่เคยมีประวัติโรคตามรายการข้างต้น</span></label>
+    </div>
     <div class="actions">
       <button class="secondary" data-action="to-intro">ย้อนกลับ</button>
-      <button class="primary" data-action="to-inputs">ถัดไป</button>
+      <button class="primary" data-action="to-inputs" disabled>ถัดไป</button>
     </div>
   </div>`;
 }

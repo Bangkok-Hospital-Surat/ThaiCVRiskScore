@@ -179,6 +179,28 @@ async function handleExport(btn, format) {
   }
 }
 
+/* --------------- eligibility checkboxes: exclusivity + enable Next --------- */
+function updateEligNext() {
+  const btn = document.querySelector('[data-action="to-inputs"]');
+  if (!btn) return;
+  const anyDisease = [...document.querySelectorAll('[data-elig]')].some(x => x.checked);
+  const none = document.getElementById('elig-none');
+  btn.disabled = !(anyDisease || (none && none.checked));
+}
+app.addEventListener('change', e => {
+  const cb = e.target;
+  if (!cb || !cb.matches || !(cb.matches('[data-elig]') || cb.id === 'elig-none')) return;
+  if (cb.checked) {
+    if (cb.id === 'elig-none') {
+      document.querySelectorAll('[data-elig]').forEach(x => { x.checked = false; });
+    } else {
+      const none = document.getElementById('elig-none');
+      if (none) none.checked = false;
+    }
+  }
+  updateEligNext();
+});
+
 /* --------------- event delegation --------------- */
 app.addEventListener('click', e => {
   // segmented controls

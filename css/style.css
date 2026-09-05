@@ -74,6 +74,10 @@ input:focus,select:focus{outline:4px solid #dceeff;border-color:var(--blue)}
 .checks label{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border:1.5px solid #efbcbc;
   border-radius:14px;background:#fffafa;font-size:15px;font-weight:700;cursor:pointer}
 .checks input{width:24px;height:24px;min-height:24px;margin:2px 0 0;accent-color:var(--danger);flex:0 0 auto}
+.section-label{font-size:14px;font-weight:800;color:#345;margin:2px 0 10px}
+.elig-or{text-align:center;color:var(--muted);font-weight:800;font-size:13px;letter-spacing:.08em;margin:14px 0}
+.checks label.none-option{border-color:#bfe3cf;background:#f2fbf6;color:#1f7a4c}
+.checks label.none-option input{accent-color:var(--green)}
 
 /* Actions */
 .actions{display:flex;gap:12px;justify-content:space-between;margin:22px 0 6px}
