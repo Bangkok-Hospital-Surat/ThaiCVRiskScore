@@ -23,7 +23,7 @@ export function run() {
   // Display cap
   const capped = interpretRisk({ riskPercent: 55, riskFraction: 0.55 });
   assert(capped.displayCapped === true, '55% is capped', bag);
-  assert(capped.displayPercentText.includes('มากกว่า 30'), 'capped shows >30 text', bag);
+  assert(capped.displayPercentText === '>30', 'capped shows ">30" short form', bag);
 
   const normal = interpretRisk({ riskPercent: 12.34, riskFraction: 0.1234 });
   assert(normal.displayPercentText === '12.3', '12.34 -> "12.3"', bag);

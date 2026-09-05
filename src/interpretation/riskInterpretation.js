@@ -15,8 +15,10 @@ export function interpretRisk(result) {
   const band = bandForPercent(pct);
 
   const capped = pct > DISPLAY_CAP_PERCENT;
+  // Big number stays SHORT so it never overflows the card on any device/font.
+  // The Thai word "มากกว่า" is carried by the meaning sentence + band label.
   const displayPercentText = capped
-    ? `มากกว่า ${DISPLAY_CAP_PERCENT}`
+    ? `>${DISPLAY_CAP_PERCENT}`
     : pct.toFixed(1);
 
   // "n in 100" phrasing — round to nearest whole person, min 1 if pct rounds to 0 but >0.
