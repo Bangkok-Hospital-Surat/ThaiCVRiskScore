@@ -70,7 +70,12 @@ async function renderCardCanvas(data) {
 
   const meas = document.createElement('canvas').getContext('2d');
   const wrapAt = (text, size, weight, maxW) => { meas.font = `${weight} ${size}px ${FONT}`; return wrap(meas, text, maxW); };
-  const gen = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  // Build the date deterministically (short Thai month + B.E. year) so its width
+  // is the same on every device — toLocaleDateService('th-TH') varies per system
+  // (some add "พ.ศ."/weekday) and can overflow the header.
+  const _thM = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+  const _now = new Date();
+  const gen = `${_now.getDate()} ${_thM[_now.getMonth()]} ${_now.getFullYear() + 543}`;
 
   const sections = [];
   const CPAD = 26; // inner padding of framed cards
