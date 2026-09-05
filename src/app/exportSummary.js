@@ -159,6 +159,11 @@ async function renderCardCanvas(data) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
   ctx.textBaseline = 'top';
+  // Draw everything left-aligned and compute x for centre/right ourselves via
+  // measureText — some devices ignore ctx.textAlign for canvas fillText.
+  ctx.textAlign = 'left';
+  const centerX = t => Math.round((W - ctx.measureText(t).width) / 2);
+  const rightX = t => Math.round(W - PAD - ctx.measureText(t).width);
 
   let y = TOP;
   for (const s of sections) {
@@ -167,26 +172,24 @@ async function renderCardCanvas(data) {
       if (logo) ctx.drawImage(logo, PAD, y + 2, s.logoW, s.logoH);
       const tx = PAD + (logo ? s.logoW + 22 : 0);
       if (logo) { ctx.strokeStyle = '#d8e5ef'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tx - 11, y + 4); ctx.lineTo(tx - 11, y + s.logoH); ctx.stroke(); }
-      ctx.textAlign = 'left'; ctx.fillStyle = NAVY; ctx.font = `800 30px ${FONT}`;
+      ctx.fillStyle = NAVY; ctx.font = `800 30px ${FONT}`;
       ctx.fillText('HeartCheck Wise', tx, y + 3);
       ctx.fillStyle = MUTED; ctx.font = `400 20px ${FONT}`;
       ctx.fillText('Thai CV Risk Score · ไม่ใช้ผลเลือด', tx, y + 40);
-      ctx.textAlign = 'right'; ctx.fillStyle = MUTED; ctx.font = `700 20px ${FONT}`;
-      ctx.fillText(gen, W - PAD, y + 12);
-      ctx.textAlign = 'left';
+      ctx.font = `700 20px ${FONT}`;
+      ctx.fillText(gen, rightX(gen), y + 12);
       ctx.strokeStyle = '#d8e5ef'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(PAD, y + s.h - 12); ctx.lineTo(W - PAD, y + s.h - 12); ctx.stroke();
     } else if (s.type === 'risk') {
       roundRect(ctx, PAD, y, CW, s.h, 20); ctx.fillStyle = s.color; ctx.fill();
-      ctx.textAlign = 'center'; ctx.fillStyle = '#ffffff';
-      ctx.font = `700 25px ${FONT}`; ctx.fillText(s.headline, W / 2, y + 22);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `700 25px ${FONT}`; ctx.fillText(s.headline, centerX(s.headline), y + 22);
       const pctText = s.pct + '%'; const maxW = CW - 120; let fs = 104;
       ctx.font = `800 ${fs}px ${FONT}`;
       while (fs > 44 && ctx.measureText(pctText).width > maxW) { fs -= 4; ctx.font = `800 ${fs}px ${FONT}`; }
-      ctx.textBaseline = 'middle'; ctx.fillText(pctText, W / 2, y + 104);
+      ctx.textBaseline = 'middle'; ctx.fillText(pctText, centerX(pctText), y + 104);
       ctx.textBaseline = 'top'; ctx.font = `700 34px ${FONT}`;
-      ctx.fillText(s.band, W / 2, y + s.h - 46);
-      ctx.textAlign = 'left';
+      ctx.fillText(s.band, centerX(s.band), y + s.h - 46);
     } else if (s.type === 'card') {
       roundRect(ctx, PAD, y, CW, s.h, 16); ctx.fillStyle = s.fill; ctx.fill();
       if (s.border) { ctx.strokeStyle = s.border; ctx.lineWidth = 1.5; ctx.stroke(); }
