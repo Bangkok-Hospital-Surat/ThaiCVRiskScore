@@ -12,8 +12,19 @@ steps to embed it on the hospital website **after UAT + clinical sign-off**.
 
 ## PART A — Host on Cloudflare Pages (can do during UAT)
 
+### A0. Create a Cloudflare account (first time only — free, no credit card)
+1. Go to **https://dash.cloudflare.com/sign-up**.
+2. Enter **email** + **password** → **Create Account**.
+3. Open the verification email from Cloudflare → click the link to confirm.
+4. After login you land on the dashboard. Cloudflare may push you to "Add a
+   site / domain" — **you can SKIP that** (Pages does not need a domain added).
+5. (Recommended for a health tool) Enable **2FA**: profile → **My Profile** →
+   **Authentication** → turn on Two-Factor.
+> No plan selection or payment is required — Pages is on the Free plan by default.
+
 ### A1. Connect the repo
-1. Cloudflare dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**.
+1. In the left sidebar open **Workers & Pages** (sometimes shown under
+   **Compute**) → **Create** → **Pages** tab → **Connect to Git**.
 2. Authorize GitHub, pick repo **BSR1719/ThaiCVRiskScore**, branch **main**.
 3. Build settings:
    - **Framework preset:** None
