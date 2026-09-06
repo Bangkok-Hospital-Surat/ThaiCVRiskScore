@@ -90,7 +90,10 @@ function render() {
  * health data. type must match the parent's listener exactly. */
 function postHeight() {
   try {
-    const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+    // Use the body's OWN rendered content height. document(Element).scrollHeight
+    // is clamped up to the iframe viewport when the frame is taller than the
+    // content, which keeps the frame stuck tall and leaves big empty space.
+    const h = Math.ceil(document.body.getBoundingClientRect().height);
     parent.postMessage({ type: 'bsr-thaicv-height', height: h }, '*');
   } catch (e) { /* not framed / blocked */ }
 }
